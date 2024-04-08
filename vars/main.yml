@@ -1,0 +1,15 @@
+---
+# vars file for lamp
+webserver_packages:
+      - httpd
+      - php
+      - php-mysqlnd
+httpd_port: 80
+httpd_server: "wordpress.mrvishnu.shop"
+httpd_docroot: "/var/www/html/default/"
+httpd_owner: "apache"
+httpd_group: "apache"
+mariadb_root_password: "mysqlroot123"
+mariadb_user: "wp_user"
+mariadb_userpass: "wpuser123"
+mariadb_userdb: "wpuserdb"

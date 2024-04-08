@@ -1,0 +1,107 @@
+---
+# tasks file for lamp
+
+# Webserver Package Installation
+- name: "Webserver package installation"
+  yum:
+    name: "{{ webserver_packages }}"
+    state: present
+
+# Configuration File from Template
+- name: "Create conf file from template"
+  template:
+    src: httpd.conf.j2
+    dest: /etc/httpd/conf/httpd.conf
+
+# Create VirtualHost from Template
+- name: "Create virtualhost from template"
+  template:
+    src: virtualhost.conf.j2
+    dest: "/etc/httpd/conf.d/default.conf"
+
+# Creating Document Root
+- name: "Creating document root for {{httpd_server}} "
+  file:
+    path: "{{ httpd_docroot }}"
+    state: directory
+    owner: "{{ httpd_owner }}"
+    group: "{{ httpd_group }}"
+
+# Creating phpinfo Page
+- name: "Creating phpinfo page"
+  copy:
+    src: test.php
+    dest: "{{ httpd_docroot }}"
+    owner: "{{ httpd_owner }}"
+    group: "{{ httpd_group }}"
+
+# Restarting Services
+- name: "Restarting services"
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: true
+  with_items:
+    - httpd
+    - php-fpm
+
+# MariaDB Setup and Configuration Tasks...
+- name: "Install MariaDB Server"
+  yum:
+    name:
+      - mariadb105-server
+      - python3-pip
+    state: present
+
+- name: "ReStart MariaDB Service"
+  service:
+    name: mariadb
+    state: restarted
+    enabled: true
+
+- name: "install python mysql extension"
+  pip:
+    name: "PyMySQL"
+    state: present
+
+- name: "Set Root Password"
+  ignore_errors: true
+  community.mysql.mysql_user:
+    login_user: "root"
+    login_password: ""
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    user: "root"
+    password: "{{ mariadb_root_password }}"
+
+- name: "removing anonymous user"
+  community.mysql.mysql_user:
+    login_user: "root"
+    login_password: "{{ mariadb_root_password }}"
+    user: ""
+    state: absent
+
+- name: "removing test db"
+  community.mysql.mysql_db:
+    login_user: "root"
+    login_password: "{{ mariadb_root_password }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    name: "test"
+    state: absent
+
+- name: "Creating Database"
+  community.mysql.mysql_db:
+    login_user: "root"
+    login_password: "{{ mariadb_root_password }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    name: "{{ mariadb_userdb }}"
+    state: present
+
+- name: "Creating Database User"
+  community.mysql.mysql_user:
+    login_user: "root"
+    login_password: "{{ mariadb_root_password }}"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    name: "{{ mariadb_user }}"
+    password: "{{ mariadb_userpass }}"
+    state: present
+    priv: "{{ mariadb_userdb }}.*:ALL"
